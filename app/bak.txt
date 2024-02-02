@@ -1,0 +1,77 @@
+
+// let data: any = await query({
+//   query: "SELECT * FROM DOG_BREEDS WHERE DOG_CODE LIKE 'Y%'",
+//   values: [],
+// })
+// console.log(data)
+
+import { GetStaticPaths, GetStaticProps } from 'next';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+
+// Define the type of data that will be fetched from the API
+type Product = {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+};
+
+// Define the type of props that will be passed to the component
+type Props = {
+  product: Product;
+};
+
+// Define the function that will fetch the data from the API
+const fetchProduct = async (id: number): Promise<Product> => {
+  const res = await fetch(`https://api.example.com/products/${id}`);
+  const data = await res.json();
+  return data;
+};
+
+// Define the function that will generate the paths for the static pages
+export const getStaticPaths: GetStaticPaths = async () => {
+  const res = await fetch('https://api.example.com/products');
+  const data = await res.json();
+  const paths = data.map((product: Product) => ({
+    params: { id: product.id.toString() },
+  }));
+  return { paths, fallback: false };
+};
+
+// Define the function that will fetch the data for the static page
+export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
+  const id = parseInt(params?.id as string, 10);
+  const product = await fetchProduct(id);
+  return { props: { product } };
+};
+
+// Define the component that will render the product details
+const ProductDetails = ({ product }: Props) => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  // Show a loading message while the data is being fetched
+  useEffect(() => {
+    if (router.isReady) {
+      setLoading(false);
+    }
+  }, [router.isReady]);
+
+  // Render the product details
+  return (
+    <div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          <h1>{product.name}</h1>
+          <p>{product.description}</p>
+          <p>Price: ${product.price}</p>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default ProductDetails;
